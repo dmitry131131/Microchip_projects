@@ -18,7 +18,7 @@ HexFile = $(addprefix $(BuildPrefix), $(TARGET))
 all: hexing 
 
 $(BuildPrefix)%.o : $(SourcePrefix)%.s
-	@echo [AS] $< -o $@
+	@echo [AS] $< "-->" $@
 	@$(AS) $(ASFLAGS) $< -o $@
 
 hexing : $(Objects)
