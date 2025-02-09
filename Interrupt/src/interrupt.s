@@ -21,24 +21,25 @@ rjmp ADC        ; ADC Conversion Handler
 
 start:
 RESET:
-; INT0 configuration
-; To configure INT0 change MCUCR and set pin INT0 to output
-; Set 10 to ISC01 abd ISC00 (MCUCR)
-in r16, MCUCR   ; get value from MCUCR
-ori r16, 0x2    ; add 10 to ISC01 and ISC00
-out MCUCR, r16  ; put new MCUCR value 
-; Set 1 to GIMSK to INT0
-ldi r16, 0x40
-out GIMSK, r16  ; put new GIMSK value
-; Configure port B as output and PB0 and PB1 to input
-ldi r16, 0xfc
-out DDRB, r16   ; set up all port B
-ldi r16, 0x3
-out PORTB, r16  ; set all port B low level and PB0 abd PB1 HIGH level
+    ; INT0 configuration
+    ; To configure INT0 change MCUCR and set pin INT0 to output
+    ; Set 10 to ISC01 abd ISC00 (MCUCR)
+    in r16, MCUCR   ; get value from MCUCR
+    ori r16, 0x2    ; add 10 to ISC01 and ISC00
+    out MCUCR, r16  ; put new MCUCR value 
+    ; Set 1 to GIMSK to INT0
+    ldi r16, 0x40
+    out GIMSK, r16  ; put new GIMSK value
+    
+    ; Configure port B as output and PB0 and PB1 to input
+    ldi r16, 0xfc
+    out DDRB, r16   ; set up all port B
+    ldi r16, 0x3
+    out PORTB, r16  ; set all port B low level and PB0 abd PB1 HIGH level
 
-ldi r17, 0x00   ; status register
-; turn interrupts on
-sei 
+    ldi r17, 0x00   ; status register
+    ; turn interrupts on
+    sei 
 
 main:
     rjmp main
