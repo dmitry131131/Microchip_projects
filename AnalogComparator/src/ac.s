@@ -12,6 +12,7 @@
 .eqv OCR0A,  0x36
 .eqv TIMSK0, 0x39
 .eqv TCNT0,  0x32
+.eqv ACSR,   0x08
 
 rjmp RESET      ; Reset Handler
 rjmp EXT_INT0   ; IRQ0 Handler
@@ -29,7 +30,7 @@ RESET:
     ; Configure port B as output and PB0 and PB1 to input
     ldi r16, 0xfc
     out DDRB, r16   ; set up all port B
-    ldi r16, 0x3
+    ldi r16, 0x2
     out PORTB, r16  ; set all port B low level and PB0 abd PB1 HIGH level
 
     ; Configure TCCR0 register
@@ -44,30 +45,24 @@ RESET:
     ldi r16, 0x0        ; Enable CTC interrupt
     out TIMSK0, r16
 
-    ; INT0 configuration
-    ; To configure INT0 change MCUCR and set pin INT0 to output
-    ; Set 10 to ISC01 abd ISC00 (MCUCR)
-    in r16, MCUCR   ; get value from MCUCR
-    ori r16, 0x2    ; add 10 to ISC01 and ISC00
-    out MCUCR, r16  ; put new MCUCR value 
-    ; Set 1 to GIMSK to INT0
-    ldi r16, 0x40
-    out GIMSK, r16  ; put new GIMSK value
-
+    ; ANA_COMP configuration
+    ldi r16, 0x4b   ;01001011
+    out ACSR, r16
+    
     sei
     ; main waiting loop
 main:;<----------|
     rjmp main;---|
 
-; INT0 interrupt handler
-EXT_INT0:
+; ANA_COMP interrupt handler
+ANA_COMP:
     push r16        ; save R16 in stack
     in r16, SREG    ; store SREG in R16
     push r16        ; save SREG in stack
 
-    ; Ban interrupt INT0
+    ; Ban interrupt ANA_COMP
     ldi r16, 0x0
-    out GIMSK, r16
+    out ACSR, r16
 
     ; Enable timer interrupt
     ldi r16, 0x4        ; Enable CTC interrupt
@@ -79,27 +74,24 @@ EXT_INT0:
 
     sei
 
-    ldi r16, 0xff   ; start blinking LED
+    ldi r16, 0xfe   ; start blinking LED
     out PORTB, r16
 ; Wait setting r16 to 0x3 by Timer interrupt
 waiting_loop:;<-------------
-    cpi r16, 0xff;         |
+    cpi r16, 0xfe;         |
     breq waiting_loop;------
 
     out PORTB, r16
 
     cli
 
-    ; Allow interrupt INT0
-    ldi r16, 0x40
-    out GIMSK, r16  ; put new GIMSK value
+    ; ANA_COMP configuration and set of interrupt state
+    ldi r16, 0x5b   ;01011011
+    out ACSR, r16
 
     ; Disable timer interrupt
     ldi r16, 0x0        ; Enable CTC interrupt
     out TIMSK0, r16
-
-    ldi r16, 0x40   ; set INTF0 to 0 (set 1 to INTF0)
-    out GIFR, r16
 
     pop r16         ; restore SREG 
     out SREG, r16   
@@ -107,13 +99,13 @@ waiting_loop:;<-------------
     reti
 
 TIM0_COMPA:
-    ldi r16, 0x03   ; turn off LED
+    ldi r16, 0x2    ; turn off LED
     reti
 
+EXT_INT0:
 PCINT0:
 TIM0_OVF:
 EE_RDY:
-ANA_COMP:
 TIM0_COMPB:
 WATCHDOG:
 ADC:

@@ -1,4 +1,4 @@
-; Program blink LED on 4 pin by INT0 interrupt with timer 0 delay
+; RS trigger with interrupt and timer save and restore state after power off
 .eqv PINB,   0x16
 .eqv DDRB,   0x17
 .eqv PORTB,  0x18
@@ -29,7 +29,12 @@ RESET:
     ; Configure port B as output and PB0 and PB1 to input
     ldi r16, 0xfc
     out DDRB, r16   ; set up all port B
-    ldi r16, 0x3
+
+;=========================================================>
+; Place to initialize EEPROM and restore state
+    ldi r17, 0x3
+;=========================================================>
+    mov r16, r17
     out PORTB, r16  ; set all port B low level and PB0 abd PB1 HIGH level
 
     ; Configure TCCR0 register
@@ -65,30 +70,26 @@ EXT_INT0:
     in r16, SREG    ; store SREG in R16
     push r16        ; save SREG in stack
 
-    ; Ban interrupt INT0
-    ldi r16, 0x0
-    out GIMSK, r16
-
     ; Enable timer interrupt
     ldi r16, 0x4        ; Enable CTC interrupt
     out TIMSK0, r16
-
     ; Set Timer 0 to 0
     ldi r16, 0x0
     out TCNT0, r16 
 
+    ldi r16, 0xff       ; Set waiting flag on
     sei
 
-    ldi r16, 0xff   ; start blinking LED
-    out PORTB, r16
-; Wait setting r16 to 0x3 by Timer interrupt
+; Wait timer0 interrupt 
 waiting_loop:;<-------------
     cpi r16, 0xff;         |
     breq waiting_loop;------
 
-    out PORTB, r16
-
     cli
+
+    ;===================================================>
+    ; Place to change led state
+    ;===================================================>
 
     ; Allow interrupt INT0
     ldi r16, 0x40
@@ -107,7 +108,7 @@ waiting_loop:;<-------------
     reti
 
 TIM0_COMPA:
-    ldi r16, 0x03   ; turn off LED
+    ldi r16, 0x00   ; turn off LED
     reti
 
 PCINT0:
