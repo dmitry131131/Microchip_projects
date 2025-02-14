@@ -12,8 +12,11 @@
 .eqv OCR0A,  0x36
 .eqv TIMSK0, 0x39
 .eqv TCNT0,  0x32
+.eqv TIFR0,  0x38
 .eqv ACSR,   0x08
+.eqv DIDR0,  0x14
 
+start:
 rjmp RESET      ; Reset Handler
 rjmp EXT_INT0   ; IRQ0 Handler
 rjmp PCINT0     ; PCINT0 Handler
@@ -25,12 +28,11 @@ rjmp TIM0_COMPB ; Timer0 CompareB Handler
 rjmp WATCHDOG   ; Watchdog Interrupt Handler
 rjmp ADC        ; ADC Conversion Handler
 
-start:
 RESET:
     ; Configure port B as output and PB0 and PB1 to input
-    ldi r16, 0xfc
+    ldi r16, 0x10
     out DDRB, r16   ; set up all port B
-    ldi r16, 0x2
+    ldi r16, 0x0
     out PORTB, r16  ; set all port B low level and PB0 abd PB1 HIGH level
 
     ; Configure TCCR0 register
@@ -42,12 +44,16 @@ RESET:
     ldi r16, 0xff       ; load top value
     out OCR0A, r16
     ; Disable interrupt
-    ldi r16, 0x0        ; Enable CTC interrupt
+    ldi r16, 0x0        ; Disable CTC interrupt
     out TIMSK0, r16
 
     ; ANA_COMP configuration
-    ldi r16, 0x4b   ;01001011
+    ldi r16, 0x0a   ;01001011
     out ACSR, r16
+
+    ; Disable Digital buffer for PB0 and PB1
+    ;ldi r16, 0x3
+    ;out DIDR0, r16
     
     sei
     ; main waiting loop
@@ -61,32 +67,36 @@ ANA_COMP:
     push r16        ; save SREG in stack
 
     ; Ban interrupt ANA_COMP
-    ldi r16, 0x0
+    in r16, ACSR
+    andi r16, 0xf7
     out ACSR, r16
 
     ; Enable timer interrupt
     ldi r16, 0x4        ; Enable CTC interrupt
     out TIMSK0, r16
-
+    ; Set Timer Interrupt flag to 0
+    ldi r16, 0x4
+    out TIFR0, r16
     ; Set Timer 0 to 0
     ldi r16, 0x0
     out TCNT0, r16 
 
     sei
 
-    ldi r16, 0xfe   ; start blinking LED
-    out PORTB, r16
+    ldi r17, 0x10   ; start blinking LED
+    out PORTB, r17
+    
 ; Wait setting r16 to 0x3 by Timer interrupt
 waiting_loop:;<-------------
-    cpi r16, 0xfe;         |
+    cpi r17, 0x10;         |
     breq waiting_loop;------
 
-    out PORTB, r16
+    out PORTB, r17
 
     cli
 
     ; ANA_COMP configuration and set of interrupt state
-    ldi r16, 0x5b   ;01011011
+    ldi r16, 0x1a   ;01011011
     out ACSR, r16
 
     ; Disable timer interrupt
@@ -99,7 +109,7 @@ waiting_loop:;<-------------
     reti
 
 TIM0_COMPA:
-    ldi r16, 0x2    ; turn off LED
+    ldi r17, 0x0    ; turn off LED
     reti
 
 EXT_INT0:
