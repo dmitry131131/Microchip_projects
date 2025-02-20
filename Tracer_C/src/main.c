@@ -1,49 +1,85 @@
-#define F_CPU 1000000UL
-
 #include "utils.h"
+#include "init.h"
+#include "custom_delay.h"
 
-// Функция инициализации портов ввода/вывода
-void PORT_B_Init() {
-    // Настройка порта B
-    DDRB |= (1 << DDB4);  // Установка PB4 как выход
-    PORTB |= (1 << PB0);  // Установка 1 в PB0
-    LED_Off();            // Установка низкого уровня на PB0
+volatile enum Mode {
+    ONLY_INSIDE,
+    ONLY_OUTSIDE,
+    INSIDE_AND_OUTSIDE,
+} global_mode = ONLY_INSIDE;
+
+void blink_led(enum Mode mode) {
+    switch (mode)
+    {
+    case ONLY_INSIDE:
+        Inside_LED_On();
+        break;
+    case ONLY_OUTSIDE:
+        Outside_LED_On();
+        break;
+    case INSIDE_AND_OUTSIDE:
+        Inside_LED_On();
+        Outside_LED_On();
+    break;
+    }
+
+    delay_x_0_1_sec(3);
+
+    switch (mode)
+    {
+    case ONLY_INSIDE:
+        Inside_LED_Off();
+        break;
+    case ONLY_OUTSIDE:
+        Outside_LED_Off();
+        break;
+    case INSIDE_AND_OUTSIDE:
+        Inside_LED_Off();
+        Outside_LED_Off();
+    break;
+    }
 }
 
-// Функция инициализации таймера
-void Timer_Init() {
-    // Настройка таймера/счетчика0
-    TCCR0B |= (1 << CS02) | (1 << CS00); // Предделитель 1024
-    TCCR0A |= (1 << WGM01);              // CTC режим
-    OCR0A = 0xff;                        // Загрузка порогового значения
-    TIMSK0 |= (1 << OCIE0A);             // Разрешение прерывания по переполнению OCIE0A
-}
+// Прерывание по изменению уровня на PCINT2
+ISR(PCINT0_vect) {
+    if (PINB & (1 << PB2)) return;
 
-// Настройка аналогового компаратора
-void ANA_Comp_Init() {
-    ACSR |= (1 << ACIS1);
-    ACSR &= ~(1 << ACBG);
-    Enable_ANA_Comp();
+    delay_x_0_1_sec(6);
+
+    if (PINB & (1 << PB2)) return;
+
+    switch (global_mode)
+    {
+    case ONLY_INSIDE:
+        global_mode = ONLY_OUTSIDE;
+        break;
+    case ONLY_OUTSIDE:
+        global_mode = INSIDE_AND_OUTSIDE;
+        break;
+    case INSIDE_AND_OUTSIDE:
+        global_mode = ONLY_INSIDE;
+        break;
+    }
+    small_outside_blink();
 }
 
 // Прерывание по компаратору
 ISR(ANA_COMP_vect) {
     // Отключение прерывания компаратора
-    Disable_ANA_Comp();
+    Disable_ANA_Comp_Interrupt();
 
-    LED_On();
-    _delay_ms(500);
-    LED_Off();
+    blink_led(global_mode);
 
     Clean_ANA_Comp_Flag();
-    Enable_ANA_Comp();
+    Enable_ANA_Comp_Interrupt();
 }
 
 int main(void) {
     // Инициализация периферии
     PORT_B_Init();
-    // Timer_Init();
     ANA_Comp_Init();
+    Timer_Init();
+    PCINT0_Interrupt_Init();
 
     // Разрешение глобальных прерываний
     sei();

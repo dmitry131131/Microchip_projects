@@ -3,7 +3,7 @@ FLASH_TARGET = attiny13
 ASFLAGS = -mmcu=attiny13 -g -O1 -Iinclude
 
 TARGET = tracer.hex
-Sources = main.c utils.c
+Sources = main.c utils.c init.c custom_delay.c
 LinkedFile = linked.elf
 
 SourcePrefix = src/
