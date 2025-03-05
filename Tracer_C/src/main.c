@@ -2,12 +2,14 @@
 #include "init.h"
 #include "custom_delay.h"
 
+// Enum с режимами работы насадки
 volatile enum Mode {
     ONLY_INSIDE,
     ONLY_OUTSIDE,
     INSIDE_AND_OUTSIDE,
 } global_mode = ONLY_INSIDE;
 
+// Функция генерации вспышки от выстрела
 void blink_led(enum Mode mode) {
     switch (mode)
     {
@@ -41,6 +43,7 @@ void blink_led(enum Mode mode) {
 }
 
 // Прерывание по изменению уровня на PCINT2
+// Переключение режима работы насадки
 ISR(PCINT0_vect) {
     if (PINB & (1 << PB2)) return;
 
@@ -64,6 +67,7 @@ ISR(PCINT0_vect) {
 }
 
 // Прерывание по компаратору
+// Срабатывание датчика 
 ISR(ANA_COMP_vect) {
     // Отключение прерывания компаратора
     Disable_ANA_Comp_Interrupt();
