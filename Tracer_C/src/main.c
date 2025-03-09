@@ -25,7 +25,7 @@ void blink_led(enum Mode mode) {
     break;
     }
 
-    delay_x_0_1_sec(3);
+    delay_x_0_1_sec(1);
 
     switch (mode)
     {
