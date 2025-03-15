@@ -40,6 +40,10 @@ objdump:
 	@echo [OBJDUMP] $(LinkedObject)
 	@avr-objdump -d $(LinkedObject)
 
+read_fuse:
+	@echo [READ_FUSE]
+	@avrdude -c usbasp -p $(FLASH_TARGET) -U hfuse:r:attiny13_hfuse.txt:h -U lfuse:r:attiny13_lfuse.txt:h
+
 clean:
 	@echo [CLEAN]
 	mkdir -p $(BuildFolder)
